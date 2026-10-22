@@ -965,13 +965,19 @@
                         <button class="theater-btn" onclick="toggleCompletedCurrent()">☑ Marquer Terminé</button>
                     </div>
                     <div class="theater-nav-btns">
+                        <button class="theater-btn" style="color: #10b981; background: rgba(16, 185, 129, 0.15); border-color: #10b981; font-weight: 600;" onclick="openCurrentInLocalPlayer()">
+                            🎬 Ouvrir dans mon Lecteur PC (Films & TV / VLC)
+                        </button>
+                        <button class="theater-btn" style="color: var(--text-dark);" onclick="chooseCurrentLocalPlayer()" title="Choisir une autre application vidéo sur votre PC">
+                            ⚙ Choisir lecteur
+                        </button>
                         <a id="theaterTgLink" href="#" target="_blank" class="theater-btn" style="color: #38bdf8; background: rgba(56, 189, 248, 0.12); border-color: #38bdf8; font-weight: 600;">
-                            ✈ Ouvrir dans Telegram (Instantané HD 0ms)
+                            ✈ Ouvrir dans Telegram
                         </a>
                     </div>
                 </div>
                 <div style="padding: 6px 16px 12px; font-size: 11px; color: var(--text-dark); display: flex; align-items: center; justify-content: space-between;">
-                    <span>⚡ <em>Lecture web directe via SSD local. Si la vidéo met quelques secondes à charger sur votre 4G, le bouton Telegram vous permet de la voir immédiatement sans attendre !</em></span>
+                    <span>⚡ <em>Cliquez sur <strong>"Ouvrir dans mon Lecteur PC"</strong> pour regarder avec VLC ou votre lecteur Windows habituel !</em></span>
                 </div>
             </div>
 
@@ -1149,8 +1155,11 @@
                                     </div>
                                 </div>
                                 <div class="lesson-actions" onclick="event.stopPropagation()">
+                                    <button class="btn-play-site" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #10b981;" onclick="openLocalPlayer(${l.vault_id}, '${escapeHtml(l.title)}')">
+                                        🎬 Lecteur PC
+                                    </button>
                                     <button class="btn-play-site" onclick="playLessonByMsgId(${l.msg_id})">
-                                        ▶ Lire sur le site
+                                        ▶ Site
                                     </button>
                                     <a href="${l.tg_link}" target="_blank" class="btn-tg-icon" title="Ouvrir dans l'app Telegram">
                                         ✈
@@ -1274,6 +1283,58 @@
         let currentSection = null;
         let currentFlatList = [];
         let mpegtsPlayer = null;
+
+        function showNotification(msg) {
+            let toast = document.getElementById('luxuryToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'luxuryToast';
+                toast.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999999;background:rgba(15,23,42,0.95);color:#f8fafc;padding:14px 22px;border-radius:12px;border:1px solid #38bdf8;box-shadow:0 12px 35px rgba(0,0,0,0.6);font-size:13px;font-weight:500;display:flex;align-items:center;gap:12px;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);backdrop-filter:blur(10px);';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+            clearTimeout(window._toastTimeout);
+            window._toastTimeout = setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-10px)';
+            }, 4000);
+        }
+
+        function openLocalPlayer(vaultId, title) {
+            showNotification(`🎬 Lancement de "${title}" dans votre lecteur PC...`);
+            fetch(`http://127.0.0.1:8080/open_player/${vaultId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'opened') {
+                        showNotification(`▶ Ouvert avec succès dans votre lecteur PC !`);
+                    } else if (data.status === 'downloading') {
+                        showNotification(`📥 Téléchargement en cours... La vidéo s'ouvrira automatiquement dans votre lecteur PC dès que prête !`);
+                    }
+                })
+                .catch(() => {
+                    showNotification(`⚠️ Impossible de contacter le serveur local. Vérifiez que stream_server.py est lancé sur votre PC.`);
+                });
+        }
+
+        function openCurrentInLocalPlayer() {
+            if (currentLesson && currentLesson.vault_id) {
+                openLocalPlayer(currentLesson.vault_id, currentLesson.title);
+            }
+        }
+
+        function chooseCurrentLocalPlayer() {
+            if (currentLesson && currentLesson.vault_id) {
+                fetch(`http://127.0.0.1:8080/choose_player/${currentLesson.vault_id}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'not_downloaded') {
+                            showNotification("⏳ La vidéo doit être prête avant de choisir une application. Cliquez d'abord sur 'Ouvrir dans mon Lecteur PC'.");
+                        }
+                    });
+            }
+        }
 
         function closeTheater() {
             const theater = document.getElementById('videoTheater');
