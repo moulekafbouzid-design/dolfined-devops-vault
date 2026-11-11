@@ -933,23 +933,161 @@
 
         .bento-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+            grid-template-columns: repeat(12, minmax(0, 1fr));
             gap: 16px;
         }
+        .bento-span-4 { grid-column: span 4; }
+        .bento-span-6 { grid-column: span 6; }
+        .bento-span-8 { grid-column: span 8; }
         .bento-card {
             position: relative;
             background: var(--bg-card);
-            backdrop-filter: blur(16px);
+            backdrop-filter: blur(18px);
             border: 1px solid var(--border-subtle);
-            border-radius: 18px;
-            padding: 20px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), var(--shadow-card);
+            border-radius: 20px;
+            padding: 22px;
             cursor: pointer;
             overflow: hidden;
-            transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+            transition: transform 0.24s cubic-bezier(.16,1,.3,1), border-color 0.22s ease, box-shadow 0.22s ease;
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
+        .bento-watermark {
+            position: absolute;
+            right: 14px;
+            top: 4px;
+            font-family: var(--font-mono);
+            font-size: 64px;
+            font-weight: 900;
+            line-height: 1;
+            color: var(--card-color, var(--accent));
+            opacity: 0.065;
+            pointer-events: none;
+            user-select: none;
+            transition: opacity 0.25s, transform 0.25s;
+        }
+        .bento-card:hover .bento-watermark {
+            opacity: 0.13;
+            transform: scale(1.06);
+        }
+        .bento-card.bento-featured {
+            background:
+                radial-gradient(circle at 92% 16%, var(--card-glow, var(--accent-glow)) 0%, transparent 56%),
+                var(--bg-card);
+            border-color: var(--border-strong);
+        }
+
+        /* Interactive DevOps Architecture Pipeline Stage */
+        .arch-stage {
+            background: var(--terminal-bg);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 18px;
+            padding: 14px 16px 12px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 24px 55px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        .arch-stage-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-family: var(--font-mono);
+            font-size: 10.5px;
+            color: #94a3b8;
+        }
+        .arch-live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #34d399;
+            font-weight: 700;
+        }
+        .arch-live-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #34d399;
+            box-shadow: 0 0 8px #34d399;
+            animation: pulseDot 2s infinite;
+        }
+        .arch-svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .arch-node {
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+        .arch-node:hover rect {
+            stroke-width: 2;
+            filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.55));
+        }
+
+        /* Studio Focus Mode, Speed & Lesson Notes */
+        body.focus-mode aside {
+            display: none !important;
+        }
+        .speed-pill-group {
+            display: inline-flex;
+            align-items: center;
+            background: var(--bg-inset);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 2px;
+            gap: 2px;
+        }
+        .speed-btn {
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 4px 7px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.14s;
+        }
+        .speed-btn:hover { color: var(--text-main); }
+        .speed-btn.active {
+            background: var(--accent);
+            color: var(--accent-contrast);
+        }
+        .notes-drawer {
+            display: none;
+            background: var(--bg-sidebar);
+            border-top: 1px solid var(--border-subtle);
+            padding: 12px 24px 14px;
+        }
+        .notes-drawer.open { display: block; }
+        .notes-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 11.5px;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+        }
+        .notes-textarea {
+            width: 100%;
+            min-height: 76px;
+            resize: vertical;
+            background: var(--bg-inset);
+            border: 1px solid var(--border-strong);
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            font-size: 12.5px;
+            outline: none;
+        }
+        .notes-textarea:focus { border-color: var(--accent); }
         .bento-card::before {
             content: '';
             position: absolute;
@@ -1646,8 +1784,12 @@
             max-width: 420px;
         }
 
-        @media (max-width: 1100px) {
+        @media (max-width: 1180px) {
             .master-hero-grid, .hero-grid { grid-template-columns: 1fr; }
+            .bento-span-4, .bento-span-6, .bento-span-8 { grid-column: span 6; }
+        }
+        @media (max-width: 720px) {
+            .bento-span-4, .bento-span-6, .bento-span-8 { grid-column: span 12; }
         }
         @media (max-width: 960px) {
             .mobile-menu-btn { display: inline-flex; }
@@ -1792,13 +1934,28 @@
                     <div class="theater-nav-btns">
                         <button class="theater-btn" onclick="playPreviousLesson()">⏮ Précédente</button>
                         <button class="theater-btn" onclick="playNextLesson()">⏭ Suivante</button>
-                        <button class="theater-btn" onclick="toggleCompletedCurrent()">✓ Marquer Terminé</button>
+                        <button class="theater-btn" onclick="toggleCompletedCurrent()">✓ Terminé</button>
+                        <div class="speed-pill-group" title="Vitesse de lecture">
+                            <button class="speed-btn" data-speed="1" onclick="setPlaybackSpeed(1)">1x</button>
+                            <button class="speed-btn" data-speed="1.25" onclick="setPlaybackSpeed(1.25)">1.25x</button>
+                            <button class="speed-btn" data-speed="1.5" onclick="setPlaybackSpeed(1.5)">1.5x</button>
+                            <button class="speed-btn" data-speed="2" onclick="setPlaybackSpeed(2)">2x</button>
+                        </div>
                     </div>
                     <div class="theater-nav-btns">
+                        <button class="theater-btn" onclick="toggleNotesDrawer()" id="btnToggleNotes">Notes</button>
+                        <button class="theater-btn" onclick="toggleFocusMode()" id="btnToggleFocus">Mode Focus</button>
                         <button class="theater-btn theater-btn-emerald" onclick="openCurrentInLocalPlayer()">Lecteur PC</button>
-                        <button class="theater-btn" onclick="chooseCurrentLocalPlayer()">Choisir lecteur</button>
+                        <button class="theater-btn" onclick="chooseCurrentLocalPlayer()">Choisir</button>
                         <a id="theaterTgLink" href="#" target="_blank" class="theater-btn theater-btn-accent">Telegram</a>
                     </div>
+                </div>
+                <div class="notes-drawer" id="lessonNotesDrawer">
+                    <div class="notes-header">
+                        <span>Notes personnelles — sauvegardées automatiquement</span>
+                        <span id="noteSavedBadge">Prêt</span>
+                    </div>
+                    <textarea class="notes-textarea" id="lessonNotesInput" placeholder="Notez ici les commandes clés, astuces ou commandes CLI de cette leçon..." oninput="saveLessonNote()"></textarea>
                 </div>
             </div>
 
@@ -2046,6 +2203,79 @@
             heroTerminalTimer = setInterval(draw, 3800);
         }
 
+        function buildPipelineDiagramHtml() {
+            return `
+                <div class="arch-stage">
+                    <div class="arch-stage-head">
+                        <span>DEVOPS PRODUCTION PIPELINE • CLICK NODE TO OPEN</span>
+                        <span class="arch-live-badge">ARCHITECTURE LIVE</span>
+                    </div>
+                    <svg class="arch-svg" viewBox="0 0 500 220" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="pipeGrad1" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stop-color="#f59e0b"/>
+                                <stop offset="50%" stop-color="#38bdf8"/>
+                                <stop offset="100%" stop-color="#10b981"/>
+                            </linearGradient>
+                            <linearGradient id="pipeGrad2" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#f97316"/>
+                                <stop offset="50%" stop-color="#60a5fa"/>
+                                <stop offset="100%" stop-color="#eab308"/>
+                            </linearGradient>
+                        </defs>
+
+                        <path id="p1" d="M 85 52 C 150 52, 160 52, 195 52" stroke="url(#pipeGrad1)" stroke-width="2" fill="none" stroke-opacity="0.45"/>
+                        <path id="p2" d="M 295 52 C 335 52, 345 52, 385 52" stroke="url(#pipeGrad1)" stroke-width="2" fill="none" stroke-opacity="0.45"/>
+                        <path id="p3" d="M 430 78 C 430 112, 360 110, 295 142" stroke="url(#pipeGrad2)" stroke-width="2" fill="none" stroke-opacity="0.45"/>
+                        <path id="p4" d="M 85 152 C 135 152, 155 152, 195 152" stroke="url(#pipeGrad2)" stroke-width="2" fill="none" stroke-opacity="0.45"/>
+                        <path id="p5" d="M 295 152 C 335 152, 345 152, 385 152" stroke="url(#pipeGrad2)" stroke-width="2" fill="none" stroke-opacity="0.45"/>
+
+                        <circle r="3.5" fill="#38bdf8"><animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#p1"/></animateMotion></circle>
+                        <circle r="3.5" fill="#10b981"><animateMotion dur="2.2s" repeatCount="indefinite" begin="0.6s"><mpath href="#p2"/></animateMotion></circle>
+                        <circle r="3.5" fill="#60a5fa"><animateMotion dur="3.0s" repeatCount="indefinite"><mpath href="#p3"/></animateMotion></circle>
+                        <circle r="3.5" fill="#fbbf24"><animateMotion dur="2.4s" repeatCount="indefinite" begin="0.3s"><mpath href="#p4"/></animateMotion></circle>
+                        <circle r="3.5" fill="#eab308"><animateMotion dur="2.8s" repeatCount="indefinite" begin="0.9s"><mpath href="#p5"/></animateMotion></circle>
+
+                        <g class="arch-node" onclick="selectCourse(1)">
+                            <rect x="14" y="26" width="102" height="52" rx="11" fill="#0f172a" stroke="#f59e0b" stroke-width="1.3"/>
+                            <text x="26" y="47" fill="#f59e0b" font-family="JetBrains Mono,monospace" font-size="9.5" font-weight="700">01-02 CORE</text>
+                            <text x="26" y="65" fill="#f8fafc" font-family="Inter,sans-serif" font-size="11.5" font-weight="700">Linux &amp; Net</text>
+                        </g>
+
+                        <g class="arch-node" onclick="selectCourse(3)">
+                            <rect x="195" y="26" width="104" height="52" rx="11" fill="#0f172a" stroke="#f97316" stroke-width="1.3"/>
+                            <text x="207" y="47" fill="#f97316" font-family="JetBrains Mono,monospace" font-size="9.5" font-weight="700">03-04 CODE</text>
+                            <text x="207" y="65" fill="#f8fafc" font-family="Inter,sans-serif" font-size="11.5" font-weight="700">Bash &amp; Git</text>
+                        </g>
+
+                        <g class="arch-node" onclick="selectCourse(5)">
+                            <rect x="382" y="26" width="104" height="52" rx="11" fill="#0f172a" stroke="#0ea5e9" stroke-width="1.3"/>
+                            <text x="394" y="47" fill="#0ea5e9" font-family="JetBrains Mono,monospace" font-size="9.5" font-weight="700">06 BUILD</text>
+                            <text x="394" y="65" fill="#f8fafc" font-family="Inter,sans-serif" font-size="11.5" font-weight="700">Docker</text>
+                        </g>
+
+                        <g class="arch-node" onclick="selectCourse(8)">
+                            <rect x="14" y="126" width="102" height="52" rx="11" fill="#0f172a" stroke="#ef4444" stroke-width="1.3"/>
+                            <text x="26" y="147" fill="#ef4444" font-family="JetBrains Mono,monospace" font-size="9.5" font-weight="700">08-09 OPS</text>
+                            <text x="26" y="165" fill="#f8fafc" font-family="Inter,sans-serif" font-size="11.5" font-weight="700">CI/CD Ansible</text>
+                        </g>
+
+                        <g class="arch-node" onclick="selectCourse(6)">
+                            <rect x="195" y="126" width="104" height="52" rx="11" fill="#0f172a" stroke="#60a5fa" stroke-width="1.3"/>
+                            <text x="207" y="147" fill="#60a5fa" font-family="JetBrains Mono,monospace" font-size="9.5" font-weight="700">07 CLUSTER</text>
+                            <text x="207" y="165" fill="#f8fafc" font-family="Inter,sans-serif" font-size="11.5" font-weight="700">Kubernetes</text>
+                        </g>
+
+                        <g class="arch-node" onclick="selectCourse(9)">
+                            <rect x="382" y="126" width="104" height="52" rx="11" fill="#0f172a" stroke="#fbbf24" stroke-width="1.4"/>
+                            <text x="394" y="147" fill="#fbbf24" font-family="JetBrains Mono,monospace" font-size="9.5" font-weight="700">10-12 CLOUD</text>
+                            <text x="394" y="165" fill="#f8fafc" font-family="Inter,sans-serif" font-size="11.5" font-weight="700">AWS &amp; Azure</text>
+                        </g>
+                    </svg>
+                </div>
+            `;
+        }
+
         function setTrackFilter(track) {
             activeTrackFilter = track;
             renderOverview();
@@ -2083,17 +2313,25 @@
                 return COURSE_META[idx % COURSE_META.length].track === activeTrackFilter;
             });
 
+            const spanClassFor = (id) => {
+                if (activeTrackFilter !== 'all') return 'bento-span-4';
+                if (id === 9) return 'bento-span-8 bento-featured';
+                if (id === 1 || id === 6) return 'bento-span-6 bento-featured';
+                return 'bento-span-4';
+            };
+
             const cardsHtml = filteredCourses.map(c => {
                 const idx = c.id;
                 const meta = COURSE_META[idx % COURSE_META.length];
                 let done = 0;
                 c.sections.forEach(s => s.lessons.forEach(l => { if (completedLessons[l.msg_id]) done++; }));
                 const pct = c.total_lessons > 0 ? Math.round((done / c.total_lessons) * 100) : 0;
-                const chips = meta.skills.slice(0, 4).map(s => `<span class="bento-chip">${escapeHtml(s)}</span>`).join('');
+                const chips = meta.skills.slice(0, 5).map(s => `<span class="bento-chip">${escapeHtml(s)}</span>`).join('');
                 return `
-                    <div class="bento-card" style="--card-color:${meta.color}; --card-glow:${meta.glow}"
+                    <div class="bento-card ${spanClassFor(idx)}" style="--card-color:${meta.color}; --card-glow:${meta.glow}"
                          onclick="selectCourse(${c.id})"
                          onmousemove="const r=this.getBoundingClientRect(); this.style.setProperty('--mx',(event.clientX-r.left)+'px'); this.style.setProperty('--my',(event.clientY-r.top)+'px');">
+                        <span class="bento-watermark">${String(idx + 1).padStart(2, '0')}</span>
                         <div class="bento-top">
                             <div class="bento-icon-wrap">${meta.svg}</div>
                             <span class="bento-num">MODULE ${String(idx + 1).padStart(2, '0')}</span>
@@ -2129,13 +2367,7 @@
                                 <div class="kpi-tile"><div class="kpi-val">${globalPct}%</div><div class="kpi-lbl">Maîtrise globale (${completedCountAll})</div></div>
                             </div>
                         </div>
-                        <div class="terminal-window">
-                            <div class="terminal-chrome">
-                                <div class="terminal-dots"><span></span><span></span><span></span></div>
-                                <span class="terminal-title">devops-cluster — bash</span>
-                            </div>
-                            <div class="terminal-body" id="overviewTerminalBody"></div>
-                        </div>
+                        ${buildPipelineDiagramHtml()}
                     </div>
                 </div>
 
@@ -2150,7 +2382,6 @@
                 </div>
                 <div class="bento-grid">${cardsHtml}</div>
             `;
-            startOverviewTerminalCycle();
         }
 
         function selectCourse(courseId) {
@@ -2503,9 +2734,55 @@
             }
         }
 
+        let currentPlaybackSpeed = Number(localStorage.getItem('dolfined_playback_speed') || '1') || 1;
+
+        function setPlaybackSpeed(rate) {
+            currentPlaybackSpeed = rate;
+            localStorage.setItem('dolfined_playback_speed', String(rate));
+            const videoEl = document.getElementById('theaterVideo');
+            if (videoEl) videoEl.playbackRate = rate;
+            document.querySelectorAll('.speed-btn').forEach(btn => {
+                btn.classList.toggle('active', Number(btn.getAttribute('data-speed')) === rate);
+            });
+        }
+        setPlaybackSpeed(currentPlaybackSpeed);
+
+        function toggleFocusMode() {
+            const on = document.body.classList.toggle('focus-mode');
+            const btn = document.getElementById('btnToggleFocus');
+            if (btn) btn.classList.toggle('theater-btn-accent', on);
+        }
+
+        function toggleNotesDrawer() {
+            const drawer = document.getElementById('lessonNotesDrawer');
+            const btn = document.getElementById('btnToggleNotes');
+            if (!drawer) return;
+            const open = drawer.classList.toggle('open');
+            if (btn) btn.classList.toggle('theater-btn-accent', open);
+        }
+
+        function loadCurrentLessonNote() {
+            const input = document.getElementById('lessonNotesInput');
+            const badge = document.getElementById('noteSavedBadge');
+            if (!input || !currentLesson) return;
+            input.value = localStorage.getItem(`dolfined_note_${currentLesson.msg_id}`) || '';
+            if (badge) badge.textContent = input.value ? 'Note chargée' : 'Prêt';
+        }
+
+        function saveLessonNote() {
+            const input = document.getElementById('lessonNotesInput');
+            const badge = document.getElementById('noteSavedBadge');
+            if (!input || !currentLesson) return;
+            localStorage.setItem(`dolfined_note_${currentLesson.msg_id}`, input.value);
+            if (badge) badge.textContent = 'Enregistré';
+        }
+
         function closeTheater() {
             activePlaybackToken++;
             setVideoLoading(false);
+            document.body.classList.remove('focus-mode');
+            const focusBtn = document.getElementById('btnToggleFocus');
+            if (focusBtn) focusBtn.classList.remove('theater-btn-accent');
             document.getElementById('videoTheater').classList.remove('active');
             const videoEl = document.getElementById('theaterVideo');
             videoEl.onerror = null;
@@ -2576,6 +2853,7 @@
             document.getElementById('theaterBadge').textContent = `${currentCourse.title.split(':')[0]} • ${currentSection.title}`;
             document.getElementById('theaterTitle').textContent = formatLessonTitle(currentLesson.title);
             document.getElementById('theaterTgLink').href = currentLesson.tg_link || 'https://t.me/c/4404127487';
+            loadCurrentLessonNote();
 
             document.querySelectorAll('.lesson-row').forEach(r => r.classList.remove('playing-now'));
             const activeRow = document.getElementById(`lesson-row-${msgId}`);
@@ -2633,7 +2911,10 @@
             setVideoLoading(true, 'Chargement du flux MP4...', 98);
 
             videoEl.onloadeddata = () => {
-                if (playbackToken === activePlaybackToken) setVideoLoading(false);
+                if (playbackToken === activePlaybackToken) {
+                    setVideoLoading(false);
+                    videoEl.playbackRate = currentPlaybackSpeed;
+                }
             };
             videoEl.onerror = () => {
                 if (playbackToken !== activePlaybackToken || !videoEl.getAttribute('src')) return;
