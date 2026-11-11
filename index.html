@@ -1780,7 +1780,43 @@
             document.querySelectorAll('.lesson-row').forEach(r => r.classList.remove('playing-now'));
         }
 
-        function playLessonByMsgId(msgId) {
+        const TUNNEL_STREAM_BASE = 'https://span-novelty-bush-previously.trycloudflare.com';
+        let cachedStreamBase = null;
+
+        async function resolveStreamBase() {
+            if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:') {
+                return 'http://127.0.0.1:8080';
+            }
+            if (cachedStreamBase) return cachedStreamBase;
+
+            // Prefer local stream_server.py on user's PC if reachable
+            try {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 900);
+                const r = await fetch('http://127.0.0.1:8080/health', { signal: ctrl.signal });
+                clearTimeout(timer);
+                if (r.ok) {
+                    cachedStreamBase = 'http://127.0.0.1:8080';
+                    return cachedStreamBase;
+                }
+            } catch (e) {}
+
+            // Otherwise use Cloudflare tunnel
+            try {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 2500);
+                const r = await fetch(`${TUNNEL_STREAM_BASE}/health`, { signal: ctrl.signal });
+                clearTimeout(timer);
+                if (r.ok) {
+                    cachedStreamBase = TUNNEL_STREAM_BASE;
+                    return cachedStreamBase;
+                }
+            } catch (e) {}
+
+            return TUNNEL_STREAM_BASE;
+        }
+
+        async function playLessonByMsgId(msgId) {
             const found = findLessonByMsgId(msgId);
             if (!found || found.lesson.is_skipped) return;
 
@@ -1811,22 +1847,17 @@
                 try { mpegtsPlayer.destroy(); } catch (e) {}
                 mpegtsPlayer = null;
             }
+            videoEl.removeAttribute('src');
+            videoEl.load();
 
-            // Resolve streaming URL
-            let streamBase = '';
-            if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:') {
-                streamBase = 'http://127.0.0.1:8080';
-            } else {
-                streamBase = 'https://protocols-academic-headset-adware.trycloudflare.com';
-            }
+            const streamBase = await resolveStreamBase();
             const streamUrl = `${streamBase}/stream/${currentLesson.vault_id}`;
 
-            // If it's a native MP4 video, use the browser's native HTML5 player (continuous, hardware accelerated)
+            // If it's a native MP4 video, use the browser's native HTML5 player
             if (currentLesson.is_mp4) {
                 videoEl.src = streamUrl;
                 videoEl.play().catch(e => console.warn('HTML5 autoplay notice:', e));
             } else if (typeof mpegts !== 'undefined' && mpegts.isSupported()) {
-                // For raw MPEG-TS files, use mpegts with correct type 'mpegts'
                 try {
                     mpegtsPlayer = mpegts.createPlayer({
                         type: 'mpegts',
@@ -1838,6 +1869,11 @@
                         enableStashBuffer: true,
                         stashInitialSize: 2 * 1024 * 1024,
                         autoCleanupSourceBuffer: true
+                    });
+                    mpegtsPlayer.on(mpegts.Events.ERROR, (errType, errDetail) => {
+                        console.error('mpegts error:', errType, errDetail);
+                        cachedStreamBase = null;
+                        showNotification('⚠️ Erreur de lecture vidéo. Vérifiez que stream_server.py est démarré sur votre PC (Start_Course_Player.bat).');
                     });
                     mpegtsPlayer.attachMediaElement(videoEl);
                     mpegtsPlayer.load();
