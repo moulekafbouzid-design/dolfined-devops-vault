@@ -7,8 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js"></script>
-    <script>if (typeof mpegts === 'undefined') document.write('<script src="mpegts.min.js"><\/script>');</script>
     <style>
         :root,
         [data-theme="obsidian"] {
@@ -1045,6 +1043,53 @@
             outline: none;
             background: #000;
         }
+        .video-loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 10, 14, 0.88);
+            backdrop-filter: blur(6px);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            padding: 24px;
+            text-align: center;
+            z-index: 10;
+        }
+        .video-loading-overlay.active {
+            display: flex;
+        }
+        .video-loading-spinner {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 3px solid var(--border-subtle);
+            border-top-color: var(--accent);
+            animation: dolfSpin 0.85s linear infinite;
+        }
+        @keyframes dolfSpin {
+            to { transform: rotate(360deg); }
+        }
+        .video-loading-text {
+            color: var(--text-primary);
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+        .video-loading-bar {
+            width: min(320px, 80%);
+            height: 6px;
+            background: var(--bg-surface-active);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        .video-loading-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--success));
+            border-radius: 999px;
+            transition: width 0.25s ease;
+        }
         .theater-toolbar {
             background: var(--bg-sidebar);
             padding: 10px 24px;
@@ -1318,6 +1363,11 @@
                 </div>
                 <div class="video-wrapper">
                     <video id="theaterVideo" controls playsinline controlslist="nodownload"></video>
+                    <div class="video-loading-overlay" id="videoLoadingOverlay">
+                        <div class="video-loading-spinner"></div>
+                        <div class="video-loading-text" id="videoLoadingText">Connexion au serveur vidéo...</div>
+                        <div class="video-loading-bar"><div class="video-loading-bar-fill" id="videoLoadingBarFill"></div></div>
+                    </div>
                 </div>
                 <div class="theater-toolbar">
                     <div class="theater-nav-btns">
@@ -1708,7 +1758,17 @@
         let currentCourse = null;
         let currentSection = null;
         let currentFlatList = [];
-        let mpegtsPlayer = null;
+        let activePlaybackToken = 0;
+
+        function setVideoLoading(isVisible, text = '', percent = 0) {
+            const overlay = document.getElementById('videoLoadingOverlay');
+            const textEl = document.getElementById('videoLoadingText');
+            const barEl = document.getElementById('videoLoadingBarFill');
+            if (!overlay) return;
+            overlay.classList.toggle('active', isVisible);
+            if (text && textEl) textEl.textContent = text;
+            if (barEl) barEl.style.width = `${Math.max(0, Math.min(100, percent || 0))}%`;
+        }
 
         function showNotification(msg) {
             let toast = document.getElementById('luxuryToast');
@@ -1769,14 +1829,16 @@
         }
 
         function closeTheater() {
+            activePlaybackToken++;
+            setVideoLoading(false);
             const theater = document.getElementById('videoTheater');
             theater.classList.remove('active');
             const videoEl = document.getElementById('theaterVideo');
+            videoEl.onerror = null;
+            videoEl.onloadeddata = null;
             videoEl.pause();
-            if (mpegtsPlayer) {
-                try { mpegtsPlayer.destroy(); } catch (e) {}
-                mpegtsPlayer = null;
-            }
+            videoEl.removeAttribute('src');
+            videoEl.load();
             document.querySelectorAll('.lesson-row').forEach(r => r.classList.remove('playing-now'));
         }
 
@@ -1820,6 +1882,7 @@
             const found = findLessonByMsgId(msgId);
             if (!found || found.lesson.is_skipped) return;
 
+            const playbackToken = ++activePlaybackToken;
             currentLesson = found.lesson;
             currentCourse = found.course;
             currentSection = found.section;
@@ -1843,55 +1906,77 @@
             if (activeRow) activeRow.classList.add('playing-now');
 
             const videoEl = document.getElementById('theaterVideo');
-            if (mpegtsPlayer) {
-                try { mpegtsPlayer.destroy(); } catch (e) {}
-                mpegtsPlayer = null;
-            }
+            videoEl.onerror = null;
+            videoEl.onloadeddata = null;
+            videoEl.pause();
             videoEl.removeAttribute('src');
             videoEl.load();
 
-            const streamBase = await resolveStreamBase();
-            const streamUrl = `${streamBase}/stream/${currentLesson.vault_id}`;
+            setVideoLoading(true, 'Connexion au serveur vidéo...', 8);
 
-            // If it's a native MP4 video, use the browser's native HTML5 player
-            if (currentLesson.is_mp4) {
-                videoEl.src = streamUrl;
-                videoEl.play().catch(e => console.warn('HTML5 autoplay notice:', e));
-            } else if (typeof mpegts !== 'undefined' && mpegts.isSupported()) {
-                try {
-                    mpegtsPlayer = mpegts.createPlayer({
-                        type: 'mpegts',
-                        isLive: false,
-                        url: streamUrl
-                    }, {
-                        enableWorker: true,
-                        lazyLoad: true,
-                        enableStashBuffer: true,
-                        stashInitialSize: 2 * 1024 * 1024,
-                        autoCleanupSourceBuffer: true
-                    });
-                    mpegtsPlayer.on(mpegts.Events.ERROR, (errType, errDetail) => {
-                        console.error('mpegts error:', errType, errDetail);
-                        cachedStreamBase = null;
-                        showNotification('⚠️ Erreur de lecture vidéo. Vérifiez que stream_server.py est démarré sur votre PC (Start_Course_Player.bat).');
-                    });
-                    mpegtsPlayer.attachMediaElement(videoEl);
-                    mpegtsPlayer.load();
-                    videoEl.play().catch(e => console.warn('mpegts autoplay notice:', e));
-                } catch (e) {
-                    console.error('mpegts init failed, falling back to direct src:', e);
-                    videoEl.src = streamUrl;
-                    videoEl.play().catch(() => {});
+            const streamBase = await resolveStreamBase();
+            if (playbackToken !== activePlaybackToken) return;
+
+            const vaultId = currentLesson.vault_id;
+            const streamUrl = `${streamBase}/stream/${vaultId}`;
+
+            try {
+                const prepResp = await fetch(`${streamBase}/prepare/${vaultId}`);
+                if (playbackToken !== activePlaybackToken) return;
+
+                if (prepResp.ok) {
+                    let st = await prepResp.json();
+                    while (st.status === 'downloading' || st.status === 'remuxing') {
+                        if (playbackToken !== activePlaybackToken) return;
+                        const pct = Number(st.percent) || 0;
+                        const label = st.status === 'remuxing'
+                            ? '⚡ Optimisation MP4 pour le navigateur...'
+                            : `📥 Préparation depuis le Vault Telegram... ${pct}%`;
+                        setVideoLoading(true, label, st.status === 'remuxing' ? 92 : pct);
+                        await new Promise(r => setTimeout(r, 400));
+                        if (playbackToken !== activePlaybackToken) return;
+                        const pollResp = await fetch(`${streamBase}/cache_status/${vaultId}`);
+                        if (!pollResp.ok) break;
+                        st = await pollResp.json();
+                    }
+                    if (st.status === 'error') {
+                        setVideoLoading(false);
+                        showNotification('⚠️ Erreur serveur lors de la préparation de la vidéo.');
+                        return;
+                    }
                 }
-            } else {
-                videoEl.src = streamUrl;
-                videoEl.play().catch(() => {});
+            } catch (err) {
+                console.error('Prepare stream failed:', err);
+                cachedStreamBase = null;
+                setVideoLoading(false);
+                showNotification('⚠️ Impossible de joindre stream_server.py. Vérifiez qu\'il est lancé sur votre PC (Start_Course_Player.bat).');
+                return;
             }
 
+            if (playbackToken !== activePlaybackToken) return;
+            setVideoLoading(true, '▶ Chargement du lecteur MP4...', 98);
+
+            videoEl.onloadeddata = () => {
+                if (playbackToken === activePlaybackToken) setVideoLoading(false);
+            };
+            videoEl.onerror = () => {
+                if (playbackToken !== activePlaybackToken || !videoEl.getAttribute('src')) return;
+                console.error('HTML5 MP4 video error:', videoEl.error);
+                cachedStreamBase = null;
+                setVideoLoading(false);
+                showNotification('⚠️ Erreur de lecture vidéo. Vérifiez que stream_server.py est démarré sur votre PC (Start_Course_Player.bat).');
+            };
             videoEl.onended = () => {
+                if (playbackToken !== activePlaybackToken) return;
                 toggleLessonCompleted(currentLesson.msg_id, { stopPropagation: () => {} });
                 playNextLesson();
             };
+
+            videoEl.src = streamUrl;
+            videoEl.play().catch(e => {
+                console.warn('HTML5 autoplay notice:', e);
+                if (playbackToken === activePlaybackToken) setVideoLoading(false);
+            });
         }
 
         function playNextLesson() {
